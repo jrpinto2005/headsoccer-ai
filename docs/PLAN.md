@@ -164,10 +164,12 @@ Cada decisión importante queda registrada como **ADR** (Architecture Decision R
 Cada fase tiene un **criterio de salida** medible. Primero atacamos **los riesgos técnicos más grandes**.
 
 ### F0 — Fundaciones y spike de viabilidad
-- [ ] Repo, tooling y CI; plantilla de ADR; estructura de §6.
-- [ ] Arreglar el entorno del Mac: hoy hay **dos Homebrew** (x86 en `/usr/local`, que va primero en el PATH, y ARM en `/opt/homebrew`), y `git` es x86 bajo Rosetta. El entorno de ML tiene que ser 100% arm64.
-- [ ] Instalar el emulador de Android (ARM64 + Play Store) y Head Soccer 7.1.5; congelar las actualizaciones; crear un snapshot.
-- [ ] Spike de **captura**: frames por gRPC desde Python; medir FPS y jitter.
+- [x] Repo público ([jrpinto2005/headsoccer-ai](https://github.com/jrpinto2005/headsoccer-ai)), tooling, CI con las actions fijadas por SHA, plantilla de ADR.
+- [x] Entorno del Mac: Homebrew arm64 primero en el PATH y Python 3.12 arm64 gestionado por uv. El `git` x86 de `/usr/local` no afecta al proyecto.
+- [x] Emulador de Android (ARM64 + Play Store, [setup reproducible](../scripts/setup_android.sh)) y Head Soccer **7.1.5** instalado desde la Play Store.
+- [ ] Congelar las actualizaciones del juego y crear un snapshot base.
+- [x] Cliente gRPC del emulador: descubrimiento con token, captura y multitouch (`hsai.emulator`).
+- [ ] Spike de **captura**: medir FPS, jitter y latencia con el juego en movimiento ([benchmark](../scripts/spikes/capture_benchmark.py)).
 - [ ] Spike de **actuación**: mantener "derecha" presionado mientras se toca "salto" (multitouch real) y comprobar que el juego responde.
 - [ ] Medir la **latencia de pantalla a pantalla**.
 - [ ] Revisar los recursos: RAM (8 GB) con el emulador y el pipeline corriendo a la vez, y disco (quedan ~37 GB libres; los datos van a la nube).
@@ -325,7 +327,7 @@ headsoccer-ai/
 **Tomadas (2026-09-28):**
 
 1. **Vertical slice:** South Korea (power shot recto) contra el primer rival de Arcade. → [ADR-0003](adr/0003-single-character-conditioned-policy.md)
-2. **Progreso:** hay una cuenta existente; se sincroniza en el emulador.
+2. **Progreso:** empezamos con una **cuenta nueva desde cero**. Así el estado inicial es reproducible, y el bot tendrá que desbloquear sus propios personajes.
 3. **Repo público** en GitHub desde el día 1, con licencia Apache-2.0. Toda dependencia AGPL requiere su propio ADR. → [ADR-0005](adr/0005-tooling-and-repo-standards.md)
 4. **Budget:** $0 hasta F3 (Mac + Colab gratis); ~$10–30/mes desde F4, alquilando GPU por horas para las corridas grandes de RL. → [ADR-0005](adr/0005-tooling-and-repo-standards.md)
 
