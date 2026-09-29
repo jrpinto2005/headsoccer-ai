@@ -40,7 +40,7 @@ select = [
 ]
 
 [tool.pyright]
-include = ["src", "tests"]
+include = ["src", "tests", "scripts"]
 exclude = ["src/hsai/emulator/_proto"]
 pythonVersion = "3.12"
 typeCheckingMode = "standard"
