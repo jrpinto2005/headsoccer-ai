@@ -5,6 +5,49 @@
 
 ---
 
+## ▶ Punto de partida para la próxima sesión (actualizado 2026-09-28)
+
+**Estamos en la Fase 0, bloqueados en un punto concreto: Head Soccer crashea al abrir en el emulador.**
+
+- **Síntoma:** `java.lang.IllegalArgumentException: No config chosen` en `GLSurfaceView` (se ve en `adb logcat -b crash`).
+- **Causa, ya medida:**
+  - El juego usa **cocos2d-x 2.x**, que pide `setEGLConfigChooser(5, 6, 5, 0, 16, 8)`: RGB565 exacto con stencil ≥ 8.
+  - El emulador 37.1.11 en macOS solo expone **3 configuraciones EGL**, todas RGB888 o RGBA8888 con D24S8.
+  - Verificado con [`scripts/egl_probe.sh`](../scripts/egl_probe.sh) en Android 14 (GPU `host` y `swiftshader_indirect`) y en Android 11.
+  - El código de gfxstream no descarta RGB565. Las configuraciones las limita el traductor GLES/ANGLE del host en macOS.
+- **Lo que no sirve:** cambiar a SwiftShader, usar una imagen más vieja (API 30) o modificar el APK (descartado por ADR-0006).
+
+**Paso 1 (quedó a medias): probar Guest ANGLE en Android 16.** El AVD `hsai36` ya está creado. Hay que arrancarlo y correr el probe:
+
+```bash
+AVD_NAME=hsai36 scripts/start_emulator.sh -no-snapshot -feature GuestAngle
+```
+
+```bash
+scripts/egl_probe.sh
+```
+
+- Primero hay que confirmar en el log del emulador que diga `supportsGuestAngle=1`.
+- **Si el probe dice `MATCH`:** instalar el juego en `hsai36` (tú inicias sesión en Google), actualizar ADR-0002 a Android 16 + Guest ANGLE y borrar la imagen de API 34.
+
+**Paso 2 (si Guest ANGLE no funciona):** evaluar otra plataforma, usando el mismo probe como criterio objetivo. Opciones, en orden de preferencia:
+1. **Teléfono Android físico:** captura con scrcpy y multitouch por ADB. Tiene la GPU real, así que el juego debería funcionar.
+2. **Genymotion Desktop:** ARM, con ADB y su propio stack gráfico.
+3. **BlueStacks Air:** cerrado y más difícil de automatizar.
+
+Cualquiera de estas implica un ADR nuevo que reemplace a ADR-0002.
+
+**Estado útil que ya existe:**
+- AVD `hsai` (Android 14) con Head Soccer 7.1.5 instalado desde la Play Store y el snapshot `fresh-install-7.1.5`.
+- Actualizaciones automáticas desactivadas globalmente en la Play Store. **Falta desmarcar la opción por app.**
+- Cliente gRPC (`hsai.emulator`): captura, multitouch, orientación y descubrimiento del emulador.
+- Spikes listos para cuando el juego corra: [`capture_benchmark.py`](../scripts/spikes/capture_benchmark.py) y [`touch_latency.py`](../scripts/spikes/touch_latency.py).
+- Imágenes instaladas: API 34 y API 36. Quedaban ~27 GB libres en disco.
+
+**Pendiente de decidir por ti:** ¿cambiar el email de los commits al *noreply* de GitHub? Hoy los commits llevan tu email de Uniandes.
+
+---
+
 ## 0. Resumen ejecutivo
 
 | Tema | Decisión propuesta | Por qué, en una línea |
@@ -167,7 +210,8 @@ Cada fase tiene un **criterio de salida** medible. Primero atacamos **los riesgo
 - [x] Repo público ([jrpinto2005/headsoccer-ai](https://github.com/jrpinto2005/headsoccer-ai)), tooling, CI con las actions fijadas por SHA, plantilla de ADR.
 - [x] Entorno del Mac: Homebrew arm64 primero en el PATH y Python 3.12 arm64 gestionado por uv. El `git` x86 de `/usr/local` no afecta al proyecto.
 - [x] Emulador de Android (ARM64 + Play Store, [setup reproducible](../scripts/setup_android.sh)) y Head Soccer **7.1.5** instalado desde la Play Store.
-- [ ] Congelar las actualizaciones del juego y crear un snapshot base.
+- [x] Snapshot base `fresh-install-7.1.5`; actualizaciones automáticas desactivadas globalmente (falta la opción por app).
+- [ ] 🚧 **Bloqueador:** el juego crashea por falta de una configuración EGL RGB565 (ver "Punto de partida" arriba).
 - [x] Cliente gRPC del emulador: descubrimiento con token, captura y multitouch (`hsai.emulator`).
 - [ ] Spike de **captura**: medir FPS, jitter y latencia con el juego en movimiento ([benchmark](../scripts/spikes/capture_benchmark.py)).
 - [ ] Spike de **actuación**: mantener "derecha" presionado mientras se toca "salto" (multitouch real) y comprobar que el juego responde.

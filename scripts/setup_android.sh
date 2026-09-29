@@ -3,7 +3,8 @@
 # Idempotent: re-running only installs or fixes what is missing.
 #
 # Usage: scripts/setup_android.sh
-# Env:   ANDROID_HOME (default ~/Library/Android/sdk), AVD_NAME (default hsai)
+# Env:   ANDROID_HOME (default ~/Library/Android/sdk), AVD_NAME (default hsai),
+#        SYSTEM_IMAGE (default below)
 set -euo pipefail
 
 ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
@@ -14,7 +15,7 @@ CMDLINE_TOOLS_BUILD="15859902"
 CMDLINE_TOOLS_SHA256="835b62a26162b229b441d1f6d4680383815a270809eb33522c0d480fa5002c4e"
 
 # Android 14 with Google Play, so the game is installed from the official store (ADR-0002).
-SYSTEM_IMAGE="system-images;android-34;google_apis_playstore;arm64-v8a"
+SYSTEM_IMAGE="${SYSTEM_IMAGE:-system-images;android-34;google_apis_playstore;arm64-v8a}"
 
 if [[ "$(uname -s)" != "Darwin" || "$(uname -m)" != "arm64" ]]; then
   echo "error: this script targets macOS on Apple Silicon" >&2
