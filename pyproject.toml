@@ -1,0 +1,64 @@
+[project]
+name = "headsoccer-ai"
+version = "0.0.1"
+description = "A vision-based agent that plays Head Soccer against the in-game CPU."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Julian Pinto" }]
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "grpcio>=1.84.0",
+    "numpy>=2.5.3",
+    "opencv-python-headless>=5.0.0.93",
+    "protobuf>=7.36.2",
+]
+
+[build-system]
+requires = ["uv_build>=0.12,<0.13"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "hsai"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["src/hsai/emulator/_proto"]
+
+[tool.ruff.lint]
+select = [
+  "E", "W", "F",  # pycodestyle, pyflakes
+  "I",            # isort
+  "B",            # bugbear
+  "UP",           # pyupgrade
+  "SIM",          # simplify
+  "N",            # naming
+  "PT",           # pytest style
+  "NPY",          # numpy
+  "RUF",
+]
+
+[tool.pyright]
+include = ["src", "tests"]
+exclude = ["src/hsai/emulator/_proto"]
+pythonVersion = "3.12"
+typeCheckingMode = "standard"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers --import-mode=importlib"
+markers = [
+  "emulator: needs a running Android emulator (skipped in CI)",
+]
+
+[dependency-groups]
+dev = [
+    "grpcio-tools>=1.84.0",
+    "pre-commit>=4.6.2",
+    "pyright>=1.1.414",
+    "pytest>=9.1.1",
+    "ruff>=0.16.9",
+    "types-grpcio>=1.84.0.20260928",
+    "types-protobuf>=7.35.1.20260906",
+]

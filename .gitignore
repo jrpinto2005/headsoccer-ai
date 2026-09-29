@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Data and artifacts: tracked with DVC, never committed (no game assets in this repo)
+/data/*
+!/data/README.md
+/runs/
+/outputs/
+/wandb/
+*.mp4
+*.mkv
+*.png
+*.jpg
+!docs/**/*.png
+!docs/**/*.jpg
+
+# Model weights
+*.pt
+*.pth
+*.onnx
+*.mlpackage/
+*.safetensors
+*.npz
+
+# Android
+*.apk
+*.apks
+*.xapk
+*.obb
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/

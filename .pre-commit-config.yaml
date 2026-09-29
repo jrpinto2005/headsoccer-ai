@@ -1,0 +1,27 @@
+# Generated gRPC bindings are reproduced by scripts/gen_protos.sh and never hand-edited.
+exclude: ^src/hsai/emulator/_proto/
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+      - id: check-merge-conflict
+  - repo: local
+    hooks:
+      # Run the project-pinned versions from uv.lock instead of separately pinned hook versions.
+      - id: ruff-check
+        name: ruff check
+        entry: uv run --frozen ruff check --fix --force-exclude
+        language: system
+        types_or: [python, pyi]
+      - id: ruff-format
+        name: ruff format
+        entry: uv run --frozen ruff format --force-exclude
+        language: system
+        types_or: [python, pyi]
