@@ -2,7 +2,7 @@
 
 An agent that plays [Head Soccer](https://apps.apple.com/us/app/head-soccer/id487119327) (D&D Dream) **from screen pixels only** and presses the on-screen buttons, aiming to beat the in-game CPU consistently. It runs first on the Android emulator on a Mac and later on a physical iPhone/iPad.
 
-> **Status:** Phase 0: foundations and feasibility spikes. See the [master plan](docs/PLAN.md) (Spanish) and the [architecture decision records](docs/adr/).
+> **Status:** Phase 0 (feasibility) complete: [results](docs/experiments/2026-10-01-f0-feasibility.md). Next: Phase 1, measuring the game. See the [master plan](docs/PLAN.md) (Spanish) and the [architecture decision records](docs/adr/).
 
 ## How it works (planned)
 
@@ -29,7 +29,8 @@ uv sync                      # create the environment
 uv run pre-commit install    # enable git hooks
 uv run pytest                # run tests
 scripts/setup_android.sh     # install the Android SDK, emulator and the project AVD
-scripts/start_emulator.sh    # boot the emulator with the gRPC control endpoint
+scripts/start_emulator.sh    # boot the emulator (Guest ANGLE, gRPC control endpoint)
+scripts/install_game.sh      # install your own pinned copy of the game (see ADR-0007)
 ```
 
 ## License

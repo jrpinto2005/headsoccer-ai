@@ -1,50 +1,44 @@
 # Head Soccer AI — Plan maestro
 
-> **Estado:** v0.2 · plan aprobado, Fase 0 en curso · 2026-09-28 · decisiones registradas en [docs/adr/](adr/)
+> **Estado:** v0.3 · Fase 0 completa, Fase 1 por empezar · 2026-10-01 · decisiones registradas en [docs/adr/](adr/)
 > **Meta:** un agente que juega Head Soccer (D&D Dream) **viendo solo la pantalla** y **tocando la pantalla**, y que le gana a la CPU de forma consistente. Primero en un emulador Android en el Mac y luego en un iPhone/iPad físico.
 
 ---
 
-## ▶ Punto de partida para la próxima sesión (actualizado 2026-09-28)
+## ▶ Punto de partida para la próxima sesión (actualizado 2026-10-01)
 
-**Estamos en la Fase 0, bloqueados en un punto concreto: Head Soccer crashea al abrir en el emulador.**
+**La Fase 0 está completa.** El bloqueador del render se resolvió con Android 15 ATD + Guest ANGLE ([ADR-0007](adr/0007-guest-angle-android-15.md)). Los resultados medidos están en [experiments/2026-10-01-f0-feasibility.md](experiments/2026-10-01-f0-feasibility.md):
 
-- **Síntoma:** `java.lang.IllegalArgumentException: No config chosen` en `GLSurfaceView` (se ve en `adb logcat -b crash`).
-- **Causa, ya medida:**
-  - El juego usa **cocos2d-x 2.x**, que pide `setEGLConfigChooser(5, 6, 5, 0, 16, 8)`: RGB565 exacto con stencil ≥ 8.
-  - El emulador 37.1.11 en macOS solo expone **3 configuraciones EGL**, todas RGB888 o RGBA8888 con D24S8.
-  - Verificado con [`scripts/egl_probe.sh`](../scripts/egl_probe.sh) en Android 14 (GPU `host` y `swiftshader_indirect`) y en Android 11.
-  - El código de gfxstream no descarta RGB565. Las configuraciones las limita el traductor GLES/ANGLE del host en macOS.
-- **Lo que no sirve:** cambiar a SwiftShader, usar una imagen más vieja (API 30) o modificar el APK (descartado por ADR-0006).
+| Métrica | Resultado |
+|---|---|
+| Captura | 1920×1080 a 59,6 FPS, 0 frames perdidos, 4,3 ms de latencia (p50) |
+| Multitouch | Funciona dentro del juego (mantener R + JUMP + KICK) |
+| Latencia de punta a punta (toque → frame del juego recibido) | **64 / 72 / 74 ms** (p50 / p95 / p99) |
 
-**Paso 1 (quedó a medias): probar Guest ANGLE en Android 16.** El AVD `hsai36` ya está creado. Hay que arrancarlo y correr el probe:
+**Cómo levantar el entorno:**
 
 ```bash
-AVD_NAME=hsai36 scripts/start_emulator.sh -no-snapshot -feature GuestAngle
+AVD_NAME=hsaiatd scripts/start_emulator.sh
 ```
 
 ```bash
-scripts/egl_probe.sh
+scripts/install_game.sh
 ```
 
-- Primero hay que confirmar en el log del emulador que diga `supportsGuestAngle=1`.
-- **Si el probe dice `MATCH`:** instalar el juego en `hsai36` (tú inicias sesión en Google), actualizar ADR-0002 a Android 16 + Guest ANGLE y borrar la imagen de API 34.
+- `install_game.sh` solo hace falta en un AVD nuevo. Instala la build fijada desde `data/apks/`, verifica los SHA-256 y deja el dispositivo preparado para automatización.
+- La orientación se pone en horizontal con `hsai.emulator.device.set_orientation(stub, "landscape")`.
 
-**Paso 2 (si Guest ANGLE no funciona):** evaluar otra plataforma, usando el mismo probe como criterio objetivo. Opciones, en orden de preferencia:
-1. **Teléfono Android físico:** captura con scrcpy y multitouch por ADB. Tiene la GPU real, así que el juego debería funcionar.
-2. **Genymotion Desktop:** ARM, con ADB y su propio stack gráfico.
-3. **BlueStacks Air:** cerrado y más difícil de automatizar.
+**Pendiente de limpieza (requiere tu OK):**
+- borrar los AVD viejos `hsai` (API 34 con tu sesión de Google) y `hsai35`, y las imágenes con Play Store (~13 GB);
+- después renombrar `hsaiatd` → `hsai`.
 
-Cualquiera de estas implica un ADR nuevo que reemplace a ADR-0002.
+**Próximo paso: la Fase 1 ("ciencia del juego"), empezando por:**
+1. El **grabador** (frames + inputs + timestamps).
+2. La **máquina de estados de menús**: título → Arcade → selección → partido → resultado → repetir. Esto incluye cerrar el banner promocional y aplicar la regla de *esperar a que la pantalla esté quieta y verificar cada toque*.
+3. Los experimentos de física de §1.2 sobre el enfrentamiento South Korea vs. South Korea.
 
-**Estado útil que ya existe:**
-- AVD `hsai` (Android 14) con Head Soccer 7.1.5 instalado desde la Play Store y el snapshot `fresh-install-7.1.5`.
-- Actualizaciones automáticas desactivadas globalmente en la Play Store. **Falta desmarcar la opción por app.**
-- Cliente gRPC (`hsai.emulator`): captura, multitouch, orientación y descubrimiento del emulador.
-- Spikes listos para cuando el juego corra: [`capture_benchmark.py`](../scripts/spikes/capture_benchmark.py) y [`touch_latency.py`](../scripts/spikes/touch_latency.py).
-- Imágenes instaladas: API 34 y API 36. Quedaban ~27 GB libres en disco.
-
-**Pendiente de decidir por ti:** ¿cambiar el email de los commits al *noreply* de GitHub? Hoy los commits llevan tu email de Uniandes.
+**Decisiones tuyas pendientes:**
+- ¿Cambiar el email de los commits por el *noreply* de GitHub?
 
 ---
 
@@ -170,15 +164,17 @@ Las coordenadas van en **unidades del campo**, no en píxeles. Así la política
 
 `MultiDiscrete`: mover `{izq, nada, der}` × `salto {0,1}` × `patada {0,1}` × `power {0,1}`, más **macro-acciones de dash** (`dash_izq`, `dash_der`). El actuador traduce cada macro-acción a un doble toque con el timing correcto, para que la política no tenga que aprenderse ese timing. Decidimos a **15–30 Hz** (se fija con datos en la Fase 1).
 
-### 3.4 Presupuesto de latencia (objetivo inicial)
+### 3.4 Presupuesto de latencia (medido en F0)
 
-| Etapa | Objetivo p95 |
+| Etapa | Medido / objetivo |
 |---|---|
-| Captura (gRPC, raw) | ≤ 17 ms |
-| Percepción + estado | ≤ 10 ms en el M3 (CoreML/ONNX) |
-| Política | ≤ 2 ms |
-| Inyección del toque | ≤ 10 ms |
-| **Total, de pantalla a pantalla** | **< 60 ms** |
+| Toque → el juego procesa y dibuja (emulador + juego) | **~60 ms p50, 66 ms p95** (medido; no lo controlamos) |
+| Captura (gRPC, raw, 1920×1080) | **4,3 ms p50** (medido) |
+| Percepción + estado | ≤ 10 ms en el M3 (objetivo) |
+| Política | ≤ 2 ms (objetivo) |
+| **Total del lazo** | **~75–85 ms** (≈ 5 frames) |
+
+La meta original de "< 60 ms" era una estimación. El grueso de la latencia es del juego y no se puede reducir, pero es **estable** (~10 ms de dispersión). Por eso el simulador entrena con una demora de acción de 4–5 frames, aleatorizada según la distribución medida.
 
 Medimos la latencia **de pantalla a pantalla**: inyectamos un toque que produce un cambio visible y medimos cuánto tarda en aparecer. Esa distribución real entra luego como aleatorización en el simulador.
 
@@ -206,19 +202,19 @@ Cada decisión importante queda registrada como **ADR** (Architecture Decision R
 
 Cada fase tiene un **criterio de salida** medible. Primero atacamos **los riesgos técnicos más grandes**.
 
-### F0 — Fundaciones y spike de viabilidad
+### F0 — Fundaciones y spike de viabilidad ✅ (2026-10-01)
 - [x] Repo público ([jrpinto2005/headsoccer-ai](https://github.com/jrpinto2005/headsoccer-ai)), tooling, CI con las actions fijadas por SHA, plantilla de ADR.
-- [x] Entorno del Mac: Homebrew arm64 primero en el PATH y Python 3.12 arm64 gestionado por uv. El `git` x86 de `/usr/local` no afecta al proyecto.
-- [x] Emulador de Android (ARM64 + Play Store, [setup reproducible](../scripts/setup_android.sh)) y Head Soccer **7.1.5** instalado desde la Play Store.
-- [x] Snapshot base `fresh-install-7.1.5`; actualizaciones automáticas desactivadas globalmente (falta la opción por app).
-- [ ] 🚧 **Bloqueador:** el juego crashea por falta de una configuración EGL RGB565 (ver "Punto de partida" arriba).
-- [x] Cliente gRPC del emulador: descubrimiento con token, captura y multitouch (`hsai.emulator`).
-- [ ] Spike de **captura**: medir FPS, jitter y latencia con el juego en movimiento ([benchmark](../scripts/spikes/capture_benchmark.py)).
-- [ ] Spike de **actuación**: mantener "derecha" presionado mientras se toca "salto" (multitouch real) y comprobar que el juego responde.
-- [ ] Medir la **latencia de pantalla a pantalla**.
-- [ ] Revisar los recursos: RAM (8 GB) con el emulador y el pipeline corriendo a la vez, y disco (quedan ~37 GB libres; los datos van a la nube).
+- [x] Entorno del Mac: Homebrew arm64 primero en el PATH y Python 3.12 arm64 gestionado por uv.
+- [x] Emulador reproducible ([setup](../scripts/setup_android.sh)): **Android 15 ATD + Guest ANGLE** ([ADR-0007](adr/0007-guest-angle-android-15.md)).
+- [x] Juego 7.1.5 fijado: APK + OBB entregados por Play, con checksums verificados ([install](../scripts/install_game.sh)). Sin Play Store, así que no puede actualizarse.
+- [x] Bloqueador del render (EGL RGB565) diagnosticado con un [probe](../scripts/egl_probe.sh) y resuelto.
+- [x] Cliente gRPC (`hsai.emulator`): descubrimiento con token, captura, multitouch, orientación y mapeo de coordenadas.
+- [x] Spike de **captura**: 59,6 FPS sin pérdidas, 4,3 ms (p50).
+- [x] Spike de **actuación**: multitouch real dentro del juego.
+- [x] **Latencia de punta a punta**: 64 / 72 / 74 ms (p50 / p95 / p99).
+- [x] Recursos: la RAM del host es la restricción; la imagen ATD lo mitiga. Disco: ~20 GB libres.
 
-**Criterio de salida:** un script en Python mueve, salta y patea dentro del juego, y las latencias quedan medidas y documentadas.
+**Criterio de salida:** ✅ un script en Python mueve, salta y patea dentro del juego, y las latencias quedan medidas ([reporte](experiments/2026-10-01-f0-feasibility.md)).
 
 ### F1 — "Ciencia del juego": especificación medible
 - [ ] **Grabador**: frames (video sin pérdida o casi) + eventos de input + timestamps (Parquet).
