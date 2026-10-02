@@ -1,6 +1,6 @@
 # 0002. Android emulator on Apple Silicon as the first platform
 
-- **Status:** Accepted
+- **Status:** Accepted; system image, GPU mode and install method superseded by [0007](0007-guest-angle-android-15.md)
 - **Date:** 2026-09-28
 
 ## Context

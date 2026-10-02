@@ -5,11 +5,12 @@ Each significant decision is recorded as a short ADR: context, decision, consequ
 | ADR | Title | Status |
 |---|---|---|
 | [0001](0001-modular-sim-to-real-architecture.md) | Modular pipeline with sim-to-real transfer in state space | Accepted |
-| [0002](0002-android-emulator-first.md) | Android emulator on Apple Silicon as the first platform | Accepted |
+| [0002](0002-android-emulator-first.md) | Android emulator on Apple Silicon as the first platform | Partly superseded by 0007 |
 | [0003](0003-single-character-conditioned-policy.md) | One character-conditioned policy instead of one model per character | Accepted |
 | [0004](0004-pin-game-version.md) | Pin the game version | Accepted |
 | [0005](0005-tooling-and-repo-standards.md) | Tooling and repository standards | Accepted |
 | [0006](0006-scope-ethics-and-assets.md) | Scope, ethics and game assets | Accepted |
+| [0007](0007-guest-angle-android-15.md) | Android 15 ATD image with Guest ANGLE, and a pinned game build | Accepted |
 
 Pending decisions (to be settled by benchmark or spike): simulator technology (JAX vs. C + PufferLib), detector architecture. See [PLAN.md §4](../PLAN.md).
 

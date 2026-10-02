@@ -14,8 +14,9 @@ AVD_NAME="${AVD_NAME:-hsai}"
 CMDLINE_TOOLS_BUILD="15859902"
 CMDLINE_TOOLS_SHA256="835b62a26162b229b441d1f6d4680383815a270809eb33522c0d480fa5002c4e"
 
-# Android 14 with Google Play, so the game is installed from the official store (ADR-0002).
-SYSTEM_IMAGE="${SYSTEM_IMAGE:-system-images;android-34;google_apis_playstore;arm64-v8a}"
+# Android 15 ATD: slim image for automation; Guest ANGLE provides the EGL configs the game
+# needs (ADR-0007).
+SYSTEM_IMAGE="${SYSTEM_IMAGE:-system-images;android-35;aosp_atd;arm64-v8a}"
 
 if [[ "$(uname -s)" != "Darwin" || "$(uname -m)" != "arm64" ]]; then
   echo "error: this script targets macOS on Apple Silicon" >&2
@@ -84,7 +85,11 @@ set_cfg disk.dataPartition.size 8G
 set_cfg hw.gpu.enabled yes
 set_cfg hw.gpu.mode host
 set_cfg hw.keyboard yes
-set_cfg PlayStore.enabled true
+if [[ "$SYSTEM_IMAGE" == *playstore* ]]; then
+  set_cfg PlayStore.enabled true
+else
+  set_cfg PlayStore.enabled false
+fi
 # The agent needs neither; keep the host microphone and camera out of the guest.
 set_cfg hw.audioInput no
 set_cfg hw.camera.back none
